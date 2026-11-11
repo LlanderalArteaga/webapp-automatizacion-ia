@@ -1,0 +1,17 @@
+# Archivos locales y temporales
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Entornos y dependencias (este proyecto no requiere compilación)
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+
+# Configuración local de editores
+.vscode/
+.idea/
