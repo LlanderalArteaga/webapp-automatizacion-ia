@@ -1,4 +1,4 @@
-import { REQUEST_FORMAT, REQUEST_TIMEOUT_MS, WEBHOOK_URL } from './config.js';
+﻿import { REQUEST_FORMAT, REQUEST_TIMEOUT_MS, WEBHOOK_URL } from './config.js';
 
 export class ApiError extends Error {
   constructor(message, { status = 0, code = 'request' } = {}) {
@@ -63,7 +63,7 @@ export async function askAssistant(data) {
   const headers = { Accept: 'application/json' };
   let body;
   if (REQUEST_FORMAT === 'form') {
-    headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
     body = new URLSearchParams(data).toString();
   } else {
     headers['Content-Type'] = 'application/json';
@@ -99,3 +99,4 @@ export async function askAssistant(data) {
     window.clearTimeout(timeoutId);
   }
 }
+
