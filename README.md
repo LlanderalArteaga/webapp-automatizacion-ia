@@ -1,62 +1,125 @@
-# 3.4 Web app para automatización IA
+﻿# 3.4 Web app para automatización IA
 
-Aplicación estática para consultar un asistente de tecnologías de la información. El navegador envía Tema, Nivel, Pregunta e Integración a un Webhook HTTPS de n8n. n8n valida los datos y llama a OpenAI con credenciales almacenadas en n8n.
+Aplicación web académica para consultar un asistente de tecnologías de la información conectado a un workflow de n8n Cloud y OpenAI. La interfaz está publicada en GitHub Pages y envía las consultas al Webhook de producción de n8n.
+
+- Sitio publicado: https://llanderalarteaga.github.io/webapp-automatizacion-ia/
+- Repositorio: https://github.com/LlanderalArteaga/webapp-automatizacion-ia
+
+## Funcionalidad
+
+- Captura tema, nivel, pregunta e integración.
+- Envía las consultas sin recargar la página.
+- Permite comparar dos rutas en n8n: integración nativa con OpenAI y una solicitud HTTP a Responses API.
+- Muestra el estado de la solicitud, los errores y la respuesta recibida.
+- Conserva el texto generado como texto seguro y respeta sus saltos de línea.
+- Incluye diseño adaptable a computadoras y teléfonos.
+
+## Tecnologías
+
+HTML5, CSS3, Bootstrap 5, JavaScript ES Modules, Fetch API y n8n Cloud. No requiere proceso de compilación ni backend propio.
 
 ## Estructura
 
-- `index.html`: estructura semántica del formulario y las áreas de estado y respuesta.
-- `css/styles.css`: estilos de la interfaz adaptable y accesible.
-- `js/config.js`: Production URL pública del Webhook y formato de envío.
-- `js/validation.js`: validación de opciones y normalización del texto.
-- `js/api.js`: petición Fetch, timeout, lectura JSON y mensajes de error.
-- `js/ui.js`: estados, errores y renderizado seguro usando texto.
-- `js/app.js`: eventos y coordinación de módulos.
-- `assets/favicon.svg`: favicon vectorial.
+- index.html: estructura semántica y formulario.
+- css/styles.css: estilos y diseño adaptable.
+- js/config.js: URL pública del Webhook y opciones de comunicación.
+- js/validation.js: validación de los datos del formulario.
+- js/api.js: solicitud HTTP y lectura de la respuesta de n8n.
+- js/ui.js: estados, mensajes y presentación segura del resultado.
+- js/app.js: inicialización y coordinación de la interfaz.
+- assets/: favicon y recursos gráficos.
+- .gitignore: archivos excluidos del control de versiones.
 
-## Configuración del Webhook
+## Arquitectura y contrato
 
-1. En n8n crea un flujo con un nodo **Webhook** y método `POST`. Usa una ruta propia y configuración de respuesta mediante **Respond to Webhook**.
-2. Normaliza y valida en n8n los campos `tema`, `nivel`, `pregunta` e `integracion`. Aplica límites de longitud, controla el consumo y permite solo los valores esperados.
-3. Usa un nodo **Switch** sobre `integracion`: `nativo` para el nodo OpenAI y `http` para **HTTP Request** contra Responses API. Guarda toda credencial de OpenAI en Credentials de n8n; nunca en el frontend.
-4. Unifica ambas ramas y responde JSON con `ok`, `respuesta`, `tema`, `nivel` e `integracion`. Para éxito usa `ok: true`; no incluyas secretos ni encabezados en la respuesta.
-5. Prueba primero el flujo con la Test URL desde n8n. Cuando funcione, activa el flujo y copia su **Production URL HTTPS** en `WEBHOOK_URL` de `js/config.js`. La Test URL solo sirve para depuración y no debe quedar publicada.
-6. Configura CORS para permitir el origen exacto de GitHub Pages (por ejemplo `https://usuario.github.io`) y revisa que el navegador pueda completar `OPTIONS` para `Content-Type: application/json`. Durante la prueba puede dejarse `*`; antes de publicar es preferible restringirlo a los orígenes exactos. CORS no autentica el Webhook. No uses `mode: no-cors`.
-7. Si el Webhook no admite prevalidación `OPTIONS`, confirma el error en DevTools y cambia `REQUEST_FORMAT` a `'form'` en `js/config.js`. En n8n normaliza el cuerpo `application/x-www-form-urlencoded` para conservar los mismos cuatro campos. No cambies a este modo por ensayo sin diagnosticar CORS.
+El navegador envía al Webhook de n8n únicamente estos cuatro campos:
 
-La URL del Webhook es pública y cualquier visitante puede inspeccionarla. CORS no es autenticación. Protege el flujo con validación y límites del lado de n8n, limita caracteres/solicitudes y desactívalo al concluir la evaluación si ya no se necesita. No almacenes preguntas sensibles en el navegador.
+- tema: Inteligencia artificial, Redes, Programación, Bases de datos o Internet de las cosas (IoT).
+- nivel: Básico, Intermedio o Avanzado.
+- pregunta: texto de 10 a 2000 caracteres.
+- integracion: nativo o http.
 
-### Validación del flujo
+En n8n, el Webhook valida y normaliza los valores, y Switch dirige la ejecución a la ruta seleccionada. La ruta nativo usa el nodo de OpenAI configurado en n8n. La ruta http usa HTTP Request contra la API de Responses. Ambas rutas terminan en una salida común para Respond to Webhook.
 
-Antes de llamar a OpenAI, valida en n8n que `tema`, `nivel`, `pregunta` e `integracion` estén presentes; permite solo las opciones del formulario y limita `pregunta` a 10–2000 caracteres. Para entradas inválidas responde HTTP 400 con JSON como `{ "ok": false, "mensaje": "Selecciona un tema válido." }`. La interfaz mostrará `mensaje` como texto. Para éxito responde HTTP 200 con el contrato indicado arriba.
+Respuesta exitosa esperada:
 
-## Uso local
+    {
+      "ok": true,
+      "respuesta": "Texto generado por el asistente",
+      "tema": "Redes",
+      "nivel": "Intermedio",
+      "integracion": "nativo"
+    }
 
-Abre la carpeta en VS Code y ejecuta `index.html` con una extensión de servidor estático como Live Server. También puedes usar un servidor HTTP estático local. Evita abrir el archivo como `file://`, ya que los módulos ES y las peticiones Fetch requieren un origen HTTP/HTTPS.
+La interfaz también admite campos informativos no sensibles. Si n8n responde con error, debe devolver un estado HTTP apropiado y un objeto con ok en false y un mensaje comprensible. El texto generado se obtiene y unifica en n8n; la aplicación no depende de la estructura interna de cada proveedor.
 
-Antes de consultar, configura la Production URL en `js/config.js`. La aplicación no simula respuestas: mientras no exista esa URL, muestra un mensaje de configuración pendiente.
+## Comunicación entre GitHub Pages y n8n
 
-En las herramientas del navegador revisa **Console** y **Network**. Confirma que el POST va a la Production URL, que el cuerpo contiene los cuatro campos y que la respuesta tiene el contrato JSON esperado. Si Fetch informa un error de red, comprueba origen/CORS y OPTIONS en n8n; la interfaz no puede corregir CORS o autorización desde el navegador. Revisa en n8n la ejecución asociada para diagnosticar errores 4xx/5xx.
+La aplicación usa la Production URL HTTPS configurada en js/config.js. Esa URL es pública por diseño y no es una contraseña.
 
-## Publicar en GitHub Pages
+La petición usa application/x-www-form-urlencoded. Durante la revisión, el envío JSON provocó una prevalidación CORS OPTIONS que el Webhook no atendió correctamente. El formato URL-encoded evita esa prevalidación en esta solicitud y n8n normaliza sus campos para conservar el contrato lógico. El cliente no usa mode no-cors porque impediría leer la respuesta.
 
-1. Crea un repositorio GitHub y sube los archivos de este proyecto.
-2. En el repositorio ve a **Settings > Pages**.
-3. En **Build and deployment**, selecciona **Deploy from a branch**.
-4. Selecciona la rama `main` y la carpeta `/(root)`, y guarda.
-5. Espera a que GitHub Pages publique el sitio HTTPS. Comprueba la URL tanto en computadora como en móvil.
+En el Webhook, configura Allowed Origins (CORS) con los orígenes donde se ejecuta la aplicación. Para GitHub Pages el origen es https://llanderalarteaga.github.io; en desarrollo local, Live Server suele usar http://127.0.0.1:5500. Un origen no incluye la ruta del repositorio.
 
-Los enlaces locales usan rutas relativas, por lo que la aplicación puede servirse desde `https://usuario.github.io/repositorio/`.
+CORS controla qué respuestas puede leer un navegador desde otros orígenes. No autentica usuarios ni impide que alguien invoque el Webhook con otra herramienta.
 
-## Pruebas manuales y aceptación
+## Desarrollo local
 
-- Enviar campos vacíos o una pregunta menor a 10 caracteres: muestra errores junto a los campos y no hace petición.
-- Cambiar tema, nivel e integración: los valores seleccionados se envían exactamente como `tema`, `nivel`, `pregunta`, `integracion`.
-- Consultar por ambos mecanismos con el flujo real activo: muestra `respuesta`, tema, nivel e integración sin recarga.
-- Probar un Webhook sin CORS, fuera de línea o con respuesta no JSON: muestra un mensaje comprensible y conserva el formulario.
-- Probar errores 400, 401, 403, 429 y 500 desde configuraciones de prueba en n8n: explica el estado y permite reintento manual; si HTTP 400 incluye `mensaje`, la interfaz presenta ese detalle.
-- Durante una petición: muestra el spinner y bloquea envíos duplicados.
-- Limpiar: restaura el formulario y oculta el resultado anterior.
-- En vista móvil y teclado: no hay desbordamiento horizontal, el foco es visible y controles/mensajes son accesibles.
-- Inspeccionar HTML, CSS y JavaScript: no aparece ninguna API Key de OpenAI ni token privado.
+1. Clona o descarga el repositorio y abre su carpeta en Visual Studio Code.
+2. Inicia un servidor local, por ejemplo Live Server. No abras index.html mediante file://, ya que los módulos ES necesitan un origen servido por HTTP.
+3. Revisa js/config.js y confirma que WEBHOOK_URL apunte al endpoint que quieres probar. La URL de producción se muestra en el código del navegador y no debe contener credenciales.
+4. Abre la dirección local que indique el servidor y envía una consulta.
 
-El proyecto se considera integrado solo después de comprobar una consulta real al Webhook de producción y ambas ramas de integración.
+La aplicación establece un tiempo límite de 45 segundos. Si se alcanza, muestra un error y permite volver a intentar manualmente. No reintenta automáticamente para evitar solicitudes y consumo duplicados.
+
+## Publicación en GitHub Pages
+
+El repositorio está configurado para publicar la rama main desde la carpeta raíz. La dirección publicada es:
+
+https://llanderalarteaga.github.io/webapp-automatizacion-ia/
+
+Para revisar o cambiar la publicación en GitHub:
+
+1. Abre Settings > Pages.
+2. En Build and deployment selecciona Deploy from a branch.
+3. Elige la rama main y la carpeta /(root), y guarda.
+4. Espera a que termine la publicación y abre el sitio con HTTPS.
+
+## Seguridad y uso responsable
+
+- Nunca coloques una API Key de OpenAI en HTML, CSS, JavaScript, GitHub, GitHub Pages ni almacenamiento del navegador. Las credenciales deben permanecer en Credentials de n8n.
+- Cualquier persona puede inspeccionar la URL pública del Webhook. CORS no protege el endpoint.
+- Aplica en n8n límites de longitud, validación de opciones y, si está disponible, controles de frecuencia y consumo.
+- No introduzcas contraseñas ni datos personales sensibles en las preguntas.
+- Revisa el consumo durante las pruebas y desactiva o despublica el workflow al concluir la evaluación si ya no debe aceptar solicitudes públicas.
+
+## Pruebas manuales
+
+Comprobaciones reportadas durante el desarrollo:
+
+- El sitio publicado en GitHub Pages consulta el Webhook de producción.
+- Las rutas nativo y http devuelven una respuesta nueva y ambas se muestran en la interfaz.
+- El sitio funciona en teléfono en orientación vertical y horizontal.
+- El indicador de espera aparece durante la solicitud y Limpiar formulario reinicia los campos.
+- El formulario bloquea el envío cuando faltan datos o la pregunta no cumple sus límites.
+- No se observaron errores en la consola de GitHub Pages después de varias consultas.
+
+Matriz para completar con los datos y observaciones de la ejecución final:
+
+| Prueba | Entrada | Resultado esperado | Resultado observado | Cumple |
+| --- | --- | --- | --- | --- |
+| Nivel básico | Tema y pregunta de nivel básico | Explicación adecuada al nivel |  |  |
+| Nivel intermedio | Tema y pregunta de nivel intermedio | Explicación adecuada al nivel |  |  |
+| Nivel avanzado | Tema y pregunta de nivel avanzado | Explicación adecuada al nivel |  |  |
+| Cambio de tema | Probar al menos dos temas | La respuesta corresponde al tema elegido |  |  |
+| Campos inválidos | Dejar campos sin seleccionar o pregunta fuera del límite | La interfaz señala el problema y no envía la consulta |  |  |
+| Integración nativa | integracion=nativo | Se ejecuta únicamente la ruta nativa y se muestra la respuesta |  |  |
+| Integración HTTP | integracion=http | Se ejecuta únicamente la ruta HTTP y se muestra la respuesta |  |  |
+| Falla de red o Webhook | Interrumpir temporalmente el acceso durante una prueba controlada | Se informa el error, se conservan los datos y se permite reintentar |  |  |
+
+También conviene comprobar navegación por teclado, foco visible, mensajes de estado con tecnología asistiva y que no sea posible enviar consultas duplicadas mientras una está activa.
+
+## Créditos
+
+Práctica académica: Automatización con n8n y OpenAI.  
+Desarrollado por Axel Llanderal Arteaga.
