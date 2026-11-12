@@ -1,4 +1,4 @@
-﻿# 3.4 Web app para automatización IA
+# 3.4 Web app para automatización IA
 
 Aplicación web académica para consultar un asistente de tecnologías de la información conectado a un workflow de n8n Cloud y OpenAI. La interfaz está publicada en GitHub Pages y envía las consultas al Webhook de producción de n8n.
 
@@ -36,7 +36,7 @@ El navegador envía al Webhook de n8n únicamente estos cuatro campos:
 
 - tema: Inteligencia artificial, Redes, Programación, Bases de datos o Internet de las cosas (IoT).
 - nivel: Básico, Intermedio o Avanzado.
-- pregunta: texto de 10 a 2000 caracteres.
+- pregunta: texto no vacío de hasta 2000 caracteres; la pertinencia semántica se evalúa con instrucciones en los nodos de IA de n8n.
 - integracion: nativo o http.
 
 En n8n, el Webhook valida y normaliza los valores, y Switch dirige la ejecución a la ruta seleccionada. La ruta nativo usa el nodo de OpenAI configurado en n8n. La ruta http usa HTTP Request contra la API de Responses. Ambas rutas terminan en una salida común para Respond to Webhook.
@@ -101,7 +101,7 @@ Comprobaciones reportadas durante el desarrollo:
 - Las rutas nativo y http devuelven una respuesta nueva y ambas se muestran en la interfaz.
 - El sitio funciona en teléfono en orientación vertical y horizontal.
 - El indicador de espera aparece durante la solicitud y Limpiar formulario reinicia los campos.
-- El formulario bloquea el envío cuando faltan datos o la pregunta no cumple sus límites.
+- El formulario bloquea el envío cuando faltan datos o la pregunta supera el máximo de 2000 caracteres.
 - No se observaron errores en la consola de GitHub Pages después de varias consultas.
 
 Matriz para completar con los datos y observaciones de la ejecución final:
@@ -123,3 +123,4 @@ También conviene comprobar navegación por teclado, foco visible, mensajes de e
 
 Práctica académica: Automatización con n8n y OpenAI.  
 Desarrollado por Axel Llanderal Arteaga.
+

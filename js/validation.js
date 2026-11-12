@@ -7,7 +7,6 @@ const ALLOWED_TOPICS = new Set([
 ]);
 const ALLOWED_LEVELS = new Set(['Básico', 'Intermedio', 'Avanzado']);
 const ALLOWED_INTEGRATIONS = new Set(['nativo', 'http']);
-const MIN_QUESTION_LENGTH = 10;
 const MAX_QUESTION_LENGTH = 2000;
 
 export function normalizeQuestion(value) {
@@ -25,7 +24,6 @@ export function validateForm(values) {
   if (!ALLOWED_LEVELS.has(values.nivel)) errors.nivel = 'Selecciona un nivel de la lista.';
   if (!ALLOWED_INTEGRATIONS.has(values.integracion)) errors.integracion = 'Selecciona un método de integración válido.';
   if (!question) errors.pregunta = 'Escribe tu pregunta.';
-  else if (question.length < MIN_QUESTION_LENGTH) errors.pregunta = `Escribe al menos ${MIN_QUESTION_LENGTH} caracteres significativos.`;
   else if (question.length > MAX_QUESTION_LENGTH) errors.pregunta = `La pregunta no puede superar ${MAX_QUESTION_LENGTH} caracteres.`;
 
   return {
